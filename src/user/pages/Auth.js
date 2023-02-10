@@ -5,6 +5,7 @@ import Button from "../../shared/Components/FormElements/Button";
 import Input from "../../shared/Components/FormElements/Input";
 import ErrorModal from "../../shared/Components/UIElements/ErrorModal";
 import LoadingSpinner from "../../shared/Components/UIElements/LoadingSpinner";
+import ImageUpload from "../../shared/Components/FormElements/ImageUpload";
 
 import {
   VALIDATOR_EMAIL,
@@ -28,9 +29,12 @@ const Auth = () => {
         value: "",
         isValid: false,
       },
+      password: {
+        value: "",
+        isValid: false,
+      },
     },
     false
-  
   );
 
   const switchModeHandler = () => {
@@ -39,6 +43,7 @@ const Auth = () => {
         {
           ...formState.inputs,
           name: undefined,
+          image: undefined,
         },
         formState.inputs.email.isValid && formState.inputs.password.isValid
       );
@@ -48,6 +53,10 @@ const Auth = () => {
           ...formState.inputs,
           name: {
             value: "",
+            isValid: false,
+          },
+          image: {
+            value: null,
             isValid: false,
           },
         },
@@ -60,9 +69,11 @@ const Auth = () => {
   const authSubmitHandler = async (event) => {
     event.preventDefault();
 
+    console.log(formState.inputs);
+
     if (isLoginMode) {
-      try{
-      const responseData = await sendRequest(
+      try {
+        const responseData = await sendRequest(
           "http://localhost:5001/api/users/login",
           "POST",
           JSON.stringify({
@@ -72,22 +83,24 @@ const Auth = () => {
           { "Content-Type": "application/json" }
         );
         auth.login(responseData.user.id);
-      } catch(err){}
-      } else {
+      } catch (err) {}
+    } else {
       try {
-        const responseData = await sendRequest("http://localhost:5001/api/users/signup", "POST", JSON.stringify({
-          name: formState.inputs.name.value,
-          email: formState.inputs.email.value,
-          password: formState.inputs.password.value,
-        }),{
-          "Content-Type": "application/json",
-        });
+        const formData = new FormData();
+        formData.append('email', formState.inputs.email.value);
+        formData.append('name', formState.inputs.name.value);
+        formData.append('password', formState.inputs.password.value);
+        formData.append('image', formState.inputs.image.value);
+        const responseData = await sendRequest(
+          "http://localhost:5001/api/users/signup",
+          "POST",
+          formData
+        );
 
         auth.login(responseData.user.id);
       } catch (error) {}
     }
   };
-
 
   return (
     <React.Fragment>
@@ -107,6 +120,9 @@ const Auth = () => {
               errorText="Please enter a name."
               onInput={inputHandler}
             />
+          )}
+          {!isLoginMode && (
+            <ImageUpload center id="image" onInput={inputHandler} errorText="Please provide an image"/>
           )}
           <Input
             element="input"
